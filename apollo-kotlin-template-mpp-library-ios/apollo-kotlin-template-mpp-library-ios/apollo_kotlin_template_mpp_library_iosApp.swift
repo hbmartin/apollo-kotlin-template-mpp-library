@@ -14,18 +14,11 @@ struct apollo_kotlin_template_mpp_library_iosApp: App {
         let myMppLibrary = MyMppLibrary()
         
         // Use `Task {` to be on the main thread and `Task.detached {` to be on a background thread
-        Task{
+        Task {
             print(Thread.isMainThread)
-            
-            // 1st call will go to the network
-            var results = try await myMppLibrary.executeSampleQuery()
-            print("\nNetwork:")
-            print(results)
-
-            // 2nd call will get the cached results
-            results = try await myMppLibrary.executeSampleQuery()
-            print("\nCached:")
-            print(results)
+            print("Launching")
+            KotlinNativeFlowWrapper<LaunchListQuery.Launches>(flow: myMppLibrary.executeSampleFlowQuery())
+                .subscribe(onEach: { result in debugPrint(result ?? "No results") }, onComplete: { print("COMPLETE") }, onThrow: { error in debugPrint(error) })
             
             // Show normalized cache contents
             let normalizedCacheStr = try await myMppLibrary.getNormalizedCacheString()
@@ -38,5 +31,14 @@ struct apollo_kotlin_template_mpp_library_iosApp: App {
         WindowGroup {
             ContentView()
         }
+    }
+}
+
+class CollectPrinter: Kotlinx_coroutines_coreFlowCollector {
+    private var counter = 0
+    func emit(value: Any?) async throws {
+        counter += 1
+        print("Response # \(counter)")
+        debugPrint(value ?? "Nothing")
     }
 }
